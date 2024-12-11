@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Chat App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+        #chat-box {
+            width: 100%;
+            height: 300px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            overflow-y: scroll;
+        }
+        #message-input {
+            width: 80%;
+            padding: 10px;
+        }
+        #send-button {
+            width: 15%;
+            padding: 10px;
+        }
+        .message {
+            padding: 5px;
+            margin: 5px 0;
+        }
+        .user {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Chat App</h1>
+<div id="chat-box"></div>
+
+<input type="text" id="message-input" placeholder="Enter your message..." />
+<button id="send-button">Send</button>
+
+<script>
+    // WebSocket connection
+    const socket = new WebSocket("ws://localhost:8080/ws");
+
+    // Function to append messages to the chat box
+    function appendMessage(user, content) {
+        const chatBox = document.getElementById("chat-box");
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message");
+        messageDiv.innerHTML = `<span class="user">${user}:</span> ${content}`;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+    }
+
+    // Listen for messages from the WebSocket
+    socket.onmessage = function(event) {
+        const message = JSON.parse(event.data);
+        appendMessage(message.user, message.content);
+    };
+
+    // Send message when the "Send" button is clicked
+    document.getElementById("send-button").onclick = function() {
+        const messageInput = document.getElementById("message-input");
+        const message = messageInput.value.trim();
+        if (message) {
+            const user = "User";  // You can modify this to allow users to set their name
+            const messageObj = { user: user, content: message };
+            socket.send(JSON.stringify(messageObj));
+            appendMessage(user, message);  // Display the message locally
+            messageInput.value = ""; // Clear input box
+        }
+    };
+
+    // Handle connection open and error
+    socket.onopen = function() {
+        console.log("Connected to WebSocket server");
+    };
+
+    socket.onerror = function(error) {
+        console.error("WebSocket error:", error);
+    };
+</script>
+
+</body>
+</html>

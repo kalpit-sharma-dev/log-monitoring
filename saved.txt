@@ -1,0 +1,7 @@
+	output {
+    elasticsearch {
+	hosts => ["172.18.0.1:9200"]
+	index => "registered-user"
+	workers => 1	
+	manage_template => false
+	}}
