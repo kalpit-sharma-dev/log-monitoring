@@ -63,7 +63,7 @@ func GenerateRandomEmployee(id int) Employee {
 	}
 }
 
-func main4() {
+func main00() {
 	// Create a Kafka producer
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
 	if err != nil {

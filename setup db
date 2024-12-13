@@ -1,0 +1,38 @@
+To create a user and grant all access on a specific MySQL database, follow these steps:
+
+1. **Connect to your MySQL server** using a command-line client like `mysql` or a tool like phpMyAdmin or MySQL Workbench.
+2. **Create a new user** and grant it the necessary permissions:
+
+   ```sql
+   CREATE USER 'kalpit'@'localhost' IDENTIFIED BY 'password';
+   ```
+
+   Replace `'kalpit'` with the desired username and `'password'` with a secure password of your choice.
+
+3. **Grant all privileges to the new user** for a specific database:
+
+   ```sql
+   GRANT ALL PRIVILEGES ON pipeline.* TO 'kalpit'@'localhost';
+   ```
+
+   Here, `pipeline` is the name of your MySQL database. If you want to grant access from any host, use `%` instead of `localhost`:
+
+   ```sql
+   GRANT ALL PRIVILEGES ON pipeline.* TO 'kalpit'@'%';
+   ```
+
+4. **Flush the privileges** to make the changes take effect:
+
+   ```sql
+   FLUSH PRIVILEGES;
+   ```
+
+Now, your Go application can connect to the MySQL database using the credentials specified in `dbConnectionStr`.
+
+Here's the modified `dbConnectionStr` used in your Go code:
+
+```go
+dbConnectionStr = "kalpit:password@tcp(localhost:3306)/pipeline"
+```
+
+Make sure to replace `kalpit`, `password`, `localhost`, and `pipeline` with your actual username, password, MySQL host, and database name.

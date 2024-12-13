@@ -19,6 +19,7 @@ var (
 	topic           = "logs"
 	heartbeatTopic  = "heartbeat"                                    // Topic for heartbeat messages
 	dbConnectionStr = "kalpit:password@tcp(localhost:3306)/pipeline" // Replace with your MySQL connection string
+	db              *sql.DB
 )
 
 func main() {
@@ -32,6 +33,18 @@ func main() {
 
 	// HTTP Server for Monitoring and Data Insertion
 	startHTTPServer()
+}
+
+func init() {
+	var err error
+	db, err = sql.Open("mysql", dbConnectionStr)
+	if err != nil {
+		log.Fatalf("Error connecting to MySQL: %v", err)
+	}
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Error pinging MySQL: %v", err)
+	}
+	log.Println("Successfully connected to MySQL database.")
 }
 
 func startKafkaProducer() {
@@ -83,6 +96,15 @@ func startHeartbeatProducer() {
 
 	for {
 		heartbeatMessage := fmt.Sprintf(`{"timestamp": "%s", "status": "alive"}`, time.Now().Format(time.RFC3339))
+
+		// Get MySQL heartbeat status
+		mysqlStatus, err := getMySQLHeartbeatStatus()
+		if err != nil {
+			log.Printf("Failed to get MySQL heartbeat status: %v", err)
+		} else {
+			heartbeatMessage = fmt.Sprintf(`{"timestamp": "%s", "status": "alive", "mysql_status": "%s"}`, time.Now().Format(time.RFC3339), mysqlStatus)
+		}
+
 		err = producer.Produce(&ckafka.Message{
 			TopicPartition: ckafka.TopicPartition{Topic: &heartbeatTopic, Partition: ckafka.PartitionAny},
 			Value:          []byte(heartbeatMessage),
@@ -141,13 +163,16 @@ func startHTTPServer() {
 	}
 }
 
-func saveDataToMySQL(data map[string]string) error {
-	db, err := sql.Open("mysql", dbConnectionStr)
+func getMySQLHeartbeatStatus() (string, error) {
+	var status string
+	err := db.QueryRow("SELECT 'alive'").Scan(&status)
 	if err != nil {
-		return fmt.Errorf("error connecting to MySQL: %v", err)
+		return "unhealthy", fmt.Errorf("error querying MySQL: %v", err)
 	}
-	defer db.Close()
+	return status, nil
+}
 
+func saveDataToMySQL(data map[string]string) error {
 	query := "INSERT INTO logs (log_key, value) VALUES (?, ?)"
 	for key, value := range data {
 		if _, err := db.Exec(query, key, value); err != nil {
